@@ -59,16 +59,20 @@ def write_to_log(message, filename="network_analysis.log"):
 def group_threats(threats):
     grouped = {}
     for threat in threats:
-        if "DDoS" in threat:
-            grouped.setdefault("DDoS", []).append(threat)
-        elif "Keylogger" in threat:
-            grouped.setdefault("Keylogger", []).append(threat)
-        elif "port" in threat.lower():
+        # B2B KURALI: Sıradan bilgi logları LLM'in CPU/GPU zamanını harcamaz!
+        if "BİLGİ:" in threat:
+            continue
+            
+        if "Hacimsel" in threat or "Flood" in threat:
+            grouped.setdefault("Hacimsel Anomali", []).append(threat)
+        elif "Keylogger" in threat or "Sızıntı" in threat:
+            grouped.setdefault("Veri Sızıntısı / Keylogger", []).append(threat)
+        elif "Port" in threat:
             grouped.setdefault("Şüpheli Port", []).append(threat)
-        elif "protokol" in threat.lower():
-            grouped.setdefault("Diğer Tehditler", []).append(threat)
+        elif "İmza" in threat or "Payload" in threat:
+            grouped.setdefault("Kritik Payload (DPI)", []).append(threat)
         else:
-            grouped.setdefault("Trafik Analizi", []).append(threat)
+            grouped.setdefault("Genel Trafik Anomalisi", []).append(threat)
     return grouped
 
 def is_trusted_ip(ip):

@@ -1,11 +1,4 @@
-pyshark
-scapy
-pandas
-matplotlib
-openai
-python-dotenv
-rich
-flask
-huggingface_hub
-requests
-beautifulsoup4
+pyshark==0.6.0
+Flask==3.0.2
+requests==2.32.0
+python-dotenv==1.0.1

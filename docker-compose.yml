@@ -1,0 +1,19 @@
+services:
+  cyber-sec-analyzer:
+    build: .
+    container_name: soc-analyzer-node
+    # Windowsta host mode çalışmadığı için portu manuel dışarı açıyoruz
+    ports:
+      - "5000:5000"
+      - "8000:8000" # Test sunucusu için kapı açıyoruz
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      # Konteynerden Windows'taki Ollama'ya ulaşmak için 'host.docker.internal' kullanılır.
+      - OLLAMA_API_URL=http://host.docker.internal:11434/api/generate
+      - OLLAMA_MODEL=mistral
+    volumes:
+      - ./network_analysis.log:/app/network_analysis.log
+      - ./llm_analysis.log:/app/llm_analysis.log
+    restart: unless-stopped

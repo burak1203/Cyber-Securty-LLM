@@ -185,54 +185,73 @@ HTML = '''
 </html>
 '''
 
-result_cache = {'running': False, 'result': '', 'thread': None, 'stop': False}
+state_lock = threading.Lock()
+app_state = {
+    'is_running': False,
+    'stop_signal': False,
+    'analysis_thread': None
+}
 
 LOG_FILE = 'network_analysis.log'
 LLM_LOG_FILE = 'llm_analysis.log'
 
 def stop_flag():
-    return result_cache['stop']
+    with state_lock:
+        return app_state['stop_signal']
 
-def run_analysis():
-    result_cache['running'] = True
-    result_cache['stop'] = False
+def run_analysis_task():
+    # İşlem başladığında durumu kilitleyerek güncelle
+    with state_lock:
+        app_state['is_running'] = True
+        app_state['stop_signal'] = False
+        
     try:
-        result = run_full_analysis(stop_flag=stop_flag)
-        if not result_cache['stop']:
-            result_cache['result'] = result
-        else:
-            result_cache['result'] = ''
+        run_full_analysis(stop_flag=stop_flag)
     except Exception as e:
-        result_cache['result'] = f'Hata: {str(e)}'
-    result_cache['running'] = False
+        print(f"Arka plan analiz hatası: {str(e)}")
+    finally:
+        # İşlem bittiğinde veya çöktüğünde durumu güvenli bir şekilde sıfırla
+        with state_lock:
+            app_state['is_running'] = False
+            app_state['analysis_thread'] = None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         action = request.form.get('action')
-        if action == 'start' and not result_cache['running']:
-            result_cache['result'] = ''
-            result_cache['stop'] = False
-            result_cache['thread'] = threading.Thread(target=run_analysis)
-            result_cache['thread'].start()
-        elif action == 'stop' and result_cache['running']:
-            result_cache['stop'] = True
-            result_cache['running'] = False
-    return render_template_string(HTML, running=result_cache['running'], result=result_cache['result'])
+        
+        with state_lock:
+            running_status = app_state['is_running']
+            
+        if action == 'start' and not running_status:
+            with state_lock:
+                app_state['stop_signal'] = False
+                app_state['analysis_thread'] = threading.Thread(target=run_analysis_task, daemon=True)
+                app_state['analysis_thread'].start()
+                
+        elif action == 'stop' and running_status:
+            with state_lock:
+                app_state['stop_signal'] = True
+
+    # Sayfa renderlanırken güncel durumu güvenli bir şekilde al
+    with state_lock:
+        current_running_status = app_state['is_running']
+        
+    return render_template_string(HTML, running=current_running_status)
 
 @app.route('/logs')
 def logs():
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, 'r', encoding='utf-8') as f:
             return Response(f.read(), mimetype='text/plain')
-    return Response('Log dosyası bulunamadı.', mimetype='text/plain')
+    return Response('Log dosyası henüz oluşturulmadı.', mimetype='text/plain')
 
 @app.route('/llmlogs')
 def llmlogs():
     if os.path.exists(LLM_LOG_FILE):
         with open(LLM_LOG_FILE, 'r', encoding='utf-8') as f:
             return Response(f.read(), mimetype='text/plain')
-    return Response('LLM analiz dosyası bulunamadı.', mimetype='text/plain')
+    return Response('LLM analiz dosyası henüz oluşturulmadı.', mimetype='text/plain')
 
 @app.route('/download/logs')
 def download_logs():
@@ -243,4 +262,5 @@ def download_llm():
     return send_file(LLM_LOG_FILE, as_attachment=True, download_name='llm_analizleri.txt')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Production'da debug=False olmalıdır
+    app.run(host='0.0.0.0', port=5000, debug=False)

@@ -1,49 +1,39 @@
-# src/capture.py
 import pyshark
-import signal
-import sys
-import threading
+import logging
+import queue
 import asyncio
 
-def signal_handler(sig, frame):
-    print("\n✅ Trafik yakalama durduruldu.")
-    sys.exit(0)
+logger = logging.getLogger(__name__)
 
-def start_capture(interface="Wi-Fi 2", duration=None, stop_flag=None): # Adapter for loopback traffic capture
-    # Thread'de asyncio event loop yoksa oluştur
-    if threading.current_thread() is not threading.main_thread():
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-    print(f"📡 {interface} arayüzünden veri toplanıyor...")
-    print("⚠️ Durdurmak için Ctrl+C tuşlarına basın.")
+def packet_producer(interface, packet_queue: queue.Queue, stop_flag=None):
+    # Her thread kendi izole event loop'una sahip olmalı
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     
-    # Sadece ana thread'de signal handler ekle
-    if threading.current_thread() is threading.main_thread():
-        signal.signal(signal.SIGINT, signal_handler)
+    logger.info(f"📡 {interface} arayüzünden veri toplanıyor...")
+    capture = None
     
-    capture = pyshark.LiveCapture(interface=interface)
-    packets = []
-
     try:
-        # Süre belirtilmişse o kadar bekle, belirtilmemişse sürekli yakala
-        if duration:
-            capture.sniff(timeout=duration)
-        else:
-            capture.sniff_continuously()
-
-        for pkt in capture.sniff_continuously(packet_count=len(capture)):
+        bpf_rule = "not port 5000 and not port 11434"
+        capture = pyshark.LiveCapture(interface=interface, bpf_filter=bpf_rule)
+        
+        for pkt in capture.sniff_continuously():
             if stop_flag is not None and stop_flag():
-                print("⏹️ Yakalama kullanıcı tarafından durduruldu.")
+                logger.info("⏹️ Durdurma sinyali alındı. Tshark kapatılıyor...")
                 break
-            packets.append(pkt)
-
-    except KeyboardInterrupt:
-        print("\n✅ Trafik yakalama durduruldu.")
+            
+            try:
+                packet_queue.put(pkt, timeout=0.1)
+            except queue.Full:
+                pass
+                
     except Exception as e:
-        print(f"❌ Hata oluştu: {str(e)}")
+        logger.error(f"Paket yakalama sırasında kritik hata: {str(e)}", exc_info=True)
     finally:
-        print(f"✅ {len(packets)} paket yakalandı.")
-        return packets
+        if capture:
+            try:
+                capture.close()  # ÖLÜMCÜL HATA BURADAYDI. Tshark'ı zorla kapatır.
+            except Exception:
+                pass
+        loop.close()
+        logger.info("Trafik yakalama thread'i temiz bir şekilde sonlandı.")

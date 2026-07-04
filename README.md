@@ -1,130 +1,53 @@
-# Ağ Trafiği Analiz ve Tehdit Tespit Sistemi
+# CyberSec-LLM: Enterprise Network Threat Analyzer
 
-Bu uygulama, ağ trafiğini gerçek zamanlı olarak izleyen, analiz eden ve potansiyel güvenlik tehditlerini tespit eden bir araçtır. LLM (Large Language Model) entegrasyonu sayesinde, tespit edilen tehditler hakkında detaylı açıklamalar ve öneriler sunar.
+CyberSec-LLM, kurumsal ağ trafiklerini gerçek zamanlı olarak izleyen, Derin Paket İncelemesi (DPI) yapan ve tespit edilen tehditleri yerel Yapay Zeka (Local LLM) ile tamamen izole bir şekilde analiz eden bir Güvenlik Operasyon Merkezi (SOC) aracıdır.
 
-## Özellikler
+Bu araç, B2B gizlilik standartlarına (Zero-Data-Leak) uygun olarak tasarlanmıştır. Mahrem ağ loglarınız hiçbir şekilde dışarıdaki 3. parti bulut servislerine (OpenAI, HuggingFace vb.) sızdırılmaz; tüm yapay zeka analizleri on-premise (yerel) sunucularınızda çalışır.
 
-- 📡 Gerçek zamanlı ağ trafiği izleme
-- 🛡️ Otomatik tehdit tespiti
-- 🤖 LLM destekli tehdit analizi
-- 📊 Detaylı log kayıtları
-- 🚨 DDoS, Keylogger ve şüpheli port kullanımı tespiti
-- 🌐 IP adresi analizi ve güvenilirlik kontrolü
-- 🌟 Modern ve estetik bir web arayüzü
-- 📥 Log dosyalarını indirme özelliği
+## 🚀 Kurumsal Özellikler (Enterprise Features)
 
-## Gereksinimler
+- **Tam İzolasyon (Local LLM):** Ollama entegrasyonu ile analizler yerel makinede yapılır. Ağ verisi şirket dışına çıkmaz.
+- **Derin Paket İnceleme (DPI):** SQL Injection, Cross-Site Scripting (XSS), Command Injection ve Path Traversal saldırılarını paket gövdesinden havada yakalayan imza tabanlı tespit motoru.
+- **Asenkron Kuyruk Mimarisi (Zero Bottleneck):** Producer-Consumer mimarisi ile Gigabit seviyesindeki ağ trafiğinde bile I/O ve işlemci darboğazı yaşatmayan thread-safe paket işleme.
+- **Akıllı Hacimsel Analiz:** İç ağ olağan trafiği (Loopback/Private IP) ile dış kaynaklı gerçek DDoS/Flood saldırılarını birbirinden ayırt eden hacimsel filtreleme.
+- **Konteyner Mimari (Dockerized):** İşletim sisteminden bağımsız, tek satır komutla ayağa kalkan izole ve kararlı çalışma ortamı.
 
-- Python 3.8 veya üzeri (3.11.0 önerilir)
-- Wireshark
-- Npcap (Windows için)
-- HuggingFace API Token
+## 🛠️ Sistem Gereksinimleri
 
-## Kurulum
+- Docker ve Docker Compose
+- Ollama (Yerel LLM sunucusu için)
+- En az 8GB RAM (Mistral/Llama3 modelinin rahat çalışabilmesi için)
 
-1. Gerekli Python paketlerini yükleyin:
-```bash
-pip install -r requirements.txt
-```
+## 📦 Kurulum ve Dağıtım (Deployment)
 
-2. Wireshark ve Npcap'ı yükleyin:
-   - Windows: https://www.wireshark.org/download.html
-   - Linux: `sudo apt-get install wireshark`
+Proje, herhangi bir Python bağımlılığı veya Tshark kurulumu gerektirmeden doğrudan Docker üzerinden ayağa kalkacak şekilde yapılandırılmıştır.
 
-3. HuggingFace API Token'ınızı ayarlayın:
-```bash
-export HUGGINGFACE_API_TOKEN="your_token_here"  # Linux/Mac
-set HUGGINGFACE_API_TOKEN=your_token_here       # Windows
-```
+1. **Yerel LLM Sunucusunu Hazırlayın:**
+   Sunucunuza [Ollama](https://ollama.com/)'yı kurun ve analiz modelini indirin:
+   ```bash
+   ollama run mistral
+   ```
 
-## Kullanım
+2. **Depoyu Klonlayın:**
+   ```bash
+   git clone [https://github.com/burak1203/cyber-securty-llm.git](https://github.com/burak1203/cyber-securty-llm.git)
+   cd cyber-securty-llm
+   ```
 
-### 1. Ağ Arayüzünü Seçme
+3. **Docker ile Sistemi Ayağa Kaldırın:**
+   ```bash
+   docker-compose build --no-cache
+   docker-compose up -d
+   ```
 
-Uygulamayı kullanmadan önce, izlemek istediğiniz ağ arayüzünü belirlemeniz gerekir. Windows'ta ağ arayüzlerini görmek için:
+4. **Panele Erişim:**
+   Tarayıcınızdan `http://localhost:5000` adresine giderek analiz paneline ulaşabilirsiniz.
 
-```bash
-netsh interface show interface
-```
+## 🛡️ Güvenlik ve Mimari Notları
 
-Linux'ta:
-```bash
-ip link show
-```
+- Uygulama, Docker üzerinde `network_mode: "host"` (veya port binding) ile çalışır ve `NET_ADMIN` / `NET_RAW` yetkilerini kullanarak çekirdek (kernel) seviyesinde ağ kartını dinler.
+- Gürültüyü engellemek ve "Alert Fatigue" (Uyarı Yorgunluğu) yaratmamak adına, iç ağdaki rutin yüksek veri transferleri LLM motorunu meşgul etmez, sadece bilgi logu olarak işlenir.
 
-### 2. Uygulamayı Çalıştırma
-
-```bash
-python app.py
-```
-
-Varsayılan olarak uygulama "Wi-Fi 2" arayüzünü kullanır. Farklı bir arayüz kullanmak için `src/capture.py` dosyasındaki `interface` parametresini değiştirin.
-
-### 3. Trafik Yakalama
-
-- Uygulama başladığında trafik yakalamaya başlar
-- İstediğiniz zaman "Analizi Durdur" butonuna basarak yakalamayı durdurabilirsiniz
-- Yakalama durduğunda, toplanan veriler otomatik olarak analiz edilir
-
-### 4. Sonuçları İnceleme
-
-Analiz sonuçları web arayüzünde görüntülenir. Ayrıca:
-- Canlı loglar ve LLM logları panelde gösterilir
-- Log dosyalarını indirme özelliği mevcuttur
-
-## Tespit Edilen Tehdit Türleri
-
-1. **DDoS Saldırıları**
-   - Yüksek trafik hacmi
-   - Tek kaynaktan yoğun paket gönderimi
-   - UDP/TCP SYN flood
-
-2. **Keylogger Aktivitesi**
-   - Şüpheli veri yapıları
-   - Düzenli küçük paketler
-   - Base64 kodlu veriler
-
-3. **Şüpheli Port Kullanımı**
-   - Bilinen tehlikeli portlar
-   - Beklenmeyen port kullanımları
-
-4. **Trafik Analizi**
-   - Anormal protokol kullanımı
-   - Şüpheli IP adresleri
-   - Güvenilir olmayan kaynaklar
-
-## Güvenlik Uyarıları
-
-- Bu uygulamayı sadece izin verilen ağlarda kullanın
-- Başkalarının ağ trafiğini izlemeden önce gerekli izinleri alın
-- Hassas verileri içeren log dosyalarını güvenli bir şekilde saklayın
-
-## Hata Giderme
-
-1. **"No such interface" hatası**
-   - Doğru ağ arayüzünü seçtiğinizden emin olun
-   - Wireshark'ın yüklü olduğunu kontrol edin
-
-2. **"Permission denied" hatası**
-   - Windows: Yönetici olarak çalıştırın
-   - Linux: `sudo` ile çalıştırın veya Wireshark kullanıcı grubuna ekleyin
-
-3. **LLM analizi çalışmıyor**
-   - HuggingFace API Token'ınızın doğru ayarlandığından emin olun
-   - İnternet bağlantınızı kontrol edin
-
-## Uygulama İçi Resimler
-   - Ana arayüz
-![image](https://github.com/user-attachments/assets/fab34b59-4739-4c46-bdac-5be4a3210ae7)
-
-## Katkıda Bulunma
-
-1. Bu depoyu fork edin
-2. Yeni bir branch oluşturun (`git checkout -b feature/tehdit-tespiti-gelistirmesi`)
-3. Değişikliklerinizi commit edin (`git commit -am 'Yeni özellik: Açıklama'`)
-4. Branch'inizi push edin (`git push origin feature/tehdit-tespiti-gelistirmesi`)
-5. Pull Request oluşturun
-
-## Lisans
+## 📝 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.
