@@ -1,53 +1,59 @@
-# CyberSec-LLM: Enterprise Network Threat Analyzer
+# CyberSecurity-LLM: Enterprise Network Threat Analyzer
 
-CyberSec-LLM, kurumsal ağ trafiklerini gerçek zamanlı olarak izleyen, Derin Paket İncelemesi (DPI) yapan ve tespit edilen tehditleri yerel Yapay Zeka (Local LLM) ile tamamen izole bir şekilde analiz eden bir Güvenlik Operasyon Merkezi (SOC) aracıdır.
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Docker](https://img.shields.io/badge/docker-containerized-2496ED)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Bu araç, B2B gizlilik standartlarına (Zero-Data-Leak) uygun olarak tasarlanmıştır. Mahrem ağ loglarınız hiçbir şekilde dışarıdaki 3. parti bulut servislerine (OpenAI, HuggingFace vb.) sızdırılmaz; tüm yapay zeka analizleri on-premise (yerel) sunucularınızda çalışır.
+CyberSecurity-LLM is a B2B-grade Security Operations Center (SOC) tool designed to monitor enterprise network traffic in real-time, execute Deep Packet Inspection (DPI), and analyze detected threats using isolated, on-premise Large Language Models (Local LLMs). 
 
-## 🚀 Kurumsal Özellikler (Enterprise Features)
+Built with **Zero-Data-Leakage** as its core principle, this architecture ensures that sensitive network logs are never exposed to third-party cloud APIs. All AI inferences run securely on local infrastructure.
 
-- **Tam İzolasyon (Local LLM):** Ollama entegrasyonu ile analizler yerel makinede yapılır. Ağ verisi şirket dışına çıkmaz.
-- **Derin Paket İnceleme (DPI):** SQL Injection, Cross-Site Scripting (XSS), Command Injection ve Path Traversal saldırılarını paket gövdesinden havada yakalayan imza tabanlı tespit motoru.
-- **Asenkron Kuyruk Mimarisi (Zero Bottleneck):** Producer-Consumer mimarisi ile Gigabit seviyesindeki ağ trafiğinde bile I/O ve işlemci darboğazı yaşatmayan thread-safe paket işleme.
-- **Akıllı Hacimsel Analiz:** İç ağ olağan trafiği (Loopback/Private IP) ile dış kaynaklı gerçek DDoS/Flood saldırılarını birbirinden ayırt eden hacimsel filtreleme.
-- **Konteyner Mimari (Dockerized):** İşletim sisteminden bağımsız, tek satır komutla ayağa kalkan izole ve kararlı çalışma ortamı.
+## 🚀 Enterprise Architecture & Features
 
-## 🛠️ Sistem Gereksinimleri
+- **Strict Data Contracts & Guardrails (Pydantic):** LLM outputs are strictly validated against pre-defined JSON schemas. Hallucinations or unstructured autonomous decisions are aggressively rejected, ensuring deterministic execution boundaries.
+- **Asynchronous Queue Architecture (Zero Bottleneck):** Engineered a multi-threaded, Producer-Consumer pipeline. Capable of handling high-load gigabit traffic without causing I/O or CPU bottlenecks during packet sniffing.
+- **Deterministic DPI Engine:** Signature-based threat detection capable of intercepting SQL Injection (SQLi), Cross-Site Scripting (XSS), Command Injection, and Path Traversal attacks directly from packet payloads.
+- **MVC Architecture & Isolation:** Clean separation of concerns. The View (Jinja2/HTML) is fully isolated from the Controller logic, providing a scalable and maintainable codebase.
+- **CI/CD & Regression Testing:** Automated CI/CD pipelines via **GitHub Actions**. Deep Packet Inspection signatures are validated through rigorous **Pytest** regression suites to prevent False Positives in benign traffic.
 
-- Docker ve Docker Compose
-- Ollama (Yerel LLM sunucusu için)
-- En az 8GB RAM (Mistral/Llama3 modelinin rahat çalışabilmesi için)
+## 🛠️ Technology Stack
 
-## 📦 Kurulum ve Dağıtım (Deployment)
+- **Backend:** Python, Flask (MVC), Pydantic (Data Validation)
+- **Networking & DPI:** PyShark / Tshark
+- **AI / MLOps:** Ollama (Local AI Engine), Prompt Engineering
+- **DevOps:** Docker, Docker Compose, GitHub Actions, Pytest
 
-Proje, herhangi bir Python bağımlılığı veya Tshark kurulumu gerektirmeden doğrudan Docker üzerinden ayağa kalkacak şekilde yapılandırılmıştır.
+## 📦 Getting Started (Deployment)
 
-1. **Yerel LLM Sunucusunu Hazırlayın:**
-   Sunucunuza [Ollama](https://ollama.com/)'yı kurun ve analiz modelini indirin:
+The project is fully containerized and requires no local Python dependencies or Tshark configurations on the host machine.
+
+1. **Prepare the Local LLM Server:**
+   Ensure [Ollama](https://ollama.com/) is installed and the base model is pulled:
    ```bash
    ollama run mistral
    ```
 
-2. **Depoyu Klonlayın:**
+2. **Clone The Repository:**
    ```bash
    git clone [https://github.com/burak1203/cyber-securty-llm.git](https://github.com/burak1203/cyber-securty-llm.git)
    cd cyber-securty-llm
    ```
 
-3. **Docker ile Sistemi Ayağa Kaldırın:**
+3. **Deploy via Docker Compose:**
    ```bash
    docker-compose build --no-cache
    docker-compose up -d
    ```
 
-4. **Panele Erişim:**
-   Tarayıcınızdan `http://localhost:5000` adresine giderek analiz paneline ulaşabilirsiniz.
+4. **Access the SOC Dashboard:**
+   Navigate to `http://localhost:5000` in your web browser.
 
-## 🛡️ Güvenlik ve Mimari Notları
+## 🛡️ Security Notes
 
-- Uygulama, Docker üzerinde `network_mode: "host"` (veya port binding) ile çalışır ve `NET_ADMIN` / `NET_RAW` yetkilerini kullanarak çekirdek (kernel) seviyesinde ağ kartını dinler.
-- Gürültüyü engellemek ve "Alert Fatigue" (Uyarı Yorgunluğu) yaratmamak adına, iç ağdaki rutin yüksek veri transferleri LLM motorunu meşgul etmez, sadece bilgi logu olarak işlenir.
+- The Docker container requires NET_ADMIN and NET_RAW privileges to listen to the host network interface at the kernel level.
+- To prevent "Alert Fatigue", standard volumetric traffic across internal IP spaces is logged for auditing but bypasses the LLM engine, preserving compute resources.
 
-## 📝 Lisans
+## 📝 Lisence
 
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.
+Distributed under the MIT License. See 'LICENSE' for more information.
