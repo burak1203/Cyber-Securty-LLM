@@ -36,7 +36,7 @@ The project is fully containerized and requires no local Python dependencies or 
 
 2. **Clone The Repository:**
    ```bash
-   git clone [https://github.com/burak1203/cyber-securty-llm.git](https://github.com/burak1203/cyber-securty-llm.git)
+   git clone https://github.com/burak1203/cyber-securty-llm.git
    cd cyber-securty-llm
    ```
 
@@ -54,6 +54,6 @@ The project is fully containerized and requires no local Python dependencies or 
 - The Docker container requires NET_ADMIN and NET_RAW privileges to listen to the host network interface at the kernel level.
 - To prevent "Alert Fatigue", standard volumetric traffic across internal IP spaces is logged for auditing but bypasses the LLM engine, preserving compute resources.
 
-## 📝 Lisence
+## 📝 License
 
 Distributed under the MIT License. See 'LICENSE' for more information.
