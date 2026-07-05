@@ -88,7 +88,7 @@ def analyze_payload_signatures(payload, src, dst):
             "SQL Injection (SQLi)": r"(?i)(?:'|%27)\s*(?:OR|AND)\s*(?:'|%27|\d)|(?:\bUNION\b\s+\bSELECT\b)|(?:\bDROP\b\s+\bTABLE\b)",
             "Cross-Site Scripting (XSS)": r"(?i)(?:<script>|%3Cscript%3E)|(?:javascript:|onerror=|onload=)",
             "Path Traversal": r"(?i)(?:\.\./\.\./|\.\.\\\.\.\\|/etc/passwd|c:\\windows\\system32)",
-            "Command Injection": r"(?i)(?:/bin/bash|/bin/sh|cmd\.exe|powershell|-c\s+)"
+            "Command Injection": r"(?i)(?:/bin/bash|/bin/sh|cmd\.exe|powershell|-c\s+|ps\s+aux|&&\s*[a-z]+|;\s*cat)"
         }
 
         for attack_type, pattern in SIGNATURES.items():
