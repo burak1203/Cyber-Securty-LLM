@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 def analyze_packet_batch(packet_batch):
     """
-    Kuyruktan alınan paket yığınını (batch) analiz eder.
-    Senkron döngü darboğazını önlemek için tasarlandı.
+    Analyzes the packet batch retrieved from the queue.
+    Designed to prevent synchronous loop bottlenecks.
     """
     if not packet_batch:
         return []
@@ -45,23 +45,23 @@ def analyze_packet_batch(packet_batch):
                 
             packet_data["content"] = content
 
-            # Sessiz hata yutucu (pass) kaldırıldı.
-            # Hex string doğrulaması eklendi.
+            # Removed silent error swallowing (pass).
+            # Added hex string validation.
             if isinstance(content, str) and len(content.replace(':', '')) > 20:
                 hex_str = content.replace(':', '').replace(' ', '')
-                # Basit bir hex karakter kontrolü
+                # Basic hex character check
                 if all(c in '0123456789abcdefABCDEF' for c in hex_str):
                     try:
                         ascii_str = binascii.unhexlify(hex_str).decode(errors='ignore')
                         packet_data['content_ascii'] = ascii_str
                     except binascii.Error as e:
-                        logger.debug(f"Hex çözümleme atlandı (Geçersiz format): {e}")
+                        logger.debug(f"Hex parsing skipped (Invalid format): {e}")
 
             analysis.append(packet_data)
 
         except AttributeError as ae:
-            logger.error(f"Paket özniteliği okunamadı: {ae}", exc_info=True)
+            logger.error(f"Failed to read packet attribute: {ae}", exc_info=True)
         except Exception as e:
-            logger.error(f"Paket analizi sırasında beklenmeyen hata: {e}", exc_info=True)
+            logger.error(f"Unexpected error during packet analysis: {e}", exc_info=True)
 
     return analysis

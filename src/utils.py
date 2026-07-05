@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 import ipaddress
 
-# Güvenilir IP aralıkları ve şirketler
+# Trusted IP ranges and companies
 TRUSTED_NETWORKS = {
     "Google": [
         "8.8.8.0/24", "8.8.4.0/24", "142.250.0.0/16", "172.217.0.0/16", "216.58.0.0/16", "173.194.0.0/16", "74.125.0.0/16", "64.233.0.0/16", "66.102.0.0/16", "72.14.0.0/16", "209.85.0.0/16", "66.249.0.0/16", "64.18.0.0/16", "207.126.0.0/16", "173.255.0.0/16", "108.177.0.0/16", "172.253.0.0/16", "142.250.0.0/16", "216.239.0.0/16",
@@ -37,7 +37,7 @@ def summarize_packet(packet):
 
 def is_suspicious_port(packet, threshold_ports=None):
     default_ports = {
-        21: "FTP - Dosya transferi", 22: "SSH - Uzaktan erişim", 23: "Telnet - Uzaktan erişim", 25: "SMTP - E-posta", 3389: "RDP - Uzak masaüstü", 445: "SMB - Dosya paylaşımı", 1433: "MSSQL - Veritabanı", 3306: "MySQL - Veritabanı", 5432: "PostgreSQL - Veritabanı", 27017: "MongoDB - Veritabanı"
+        21: "FTP - File transfer", 22: "SSH - Remote access", 23: "Telnet - Remote access", 25: "SMTP - Email", 3389: "RDP - Remote desktop", 445: "SMB - File sharing", 1433: "MSSQL - Database", 3306: "MySQL - Database", 5432: "PostgreSQL - Database", 27017: "MongoDB - Database"
     }
     threshold_ports = threshold_ports or default_ports
     dst_port = packet.get("dst_port")
@@ -59,20 +59,20 @@ def write_to_log(message, filename="network_analysis.log"):
 def group_threats(threats):
     grouped = {}
     for threat in threats:
-        # B2B KURALI: Sıradan bilgi logları LLM'in CPU/GPU zamanını harcamaz!
-        if "BİLGİ:" in threat:
+        # B2B RULE: Routine info logs bypass the LLM to save CPU/GPU cycles
+        if "INFO:" in threat:
             continue
             
-        if "Hacimsel" in threat or "Flood" in threat:
-            grouped.setdefault("Hacimsel Anomali", []).append(threat)
-        elif "Keylogger" in threat or "Sızıntı" in threat:
-            grouped.setdefault("Veri Sızıntısı / Keylogger", []).append(threat)
+        if "Volumetric" in threat or "Flood" in threat:
+            grouped.setdefault("Volumetric Anomaly", []).append(threat)
+        elif "Keylogger" in threat or "Leakage" in threat:
+            grouped.setdefault("Data Leakage / Keylogger", []).append(threat)
         elif "Port" in threat:
-            grouped.setdefault("Şüpheli Port", []).append(threat)
-        elif "İmza" in threat or "Payload" in threat:
-            grouped.setdefault("Kritik Payload (DPI)", []).append(threat)
+            grouped.setdefault("Suspicious Port", []).append(threat)
+        elif "Signature" in threat or "Payload" in threat:
+            grouped.setdefault("Critical Payload (DPI)", []).append(threat)
         else:
-            grouped.setdefault("Genel Trafik Anomalisi", []).append(threat)
+            grouped.setdefault("General Traffic Anomaly", []).append(threat)
     return grouped
 
 def is_trusted_ip(ip):

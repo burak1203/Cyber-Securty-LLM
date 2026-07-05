@@ -1,23 +1,23 @@
 FROM python:3.10.6-slim
 
-# Tshark kurulumu
+# Install system dependencies (Tshark for PyShark)
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y tshark && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Konteyner çalışma dizini
+# Set working directory
 WORKDIR /app
 
-# Sadece temizlenmiş hayati paketleri kopyala ve kur
+# Copy and install vital dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kodun tamamını içeri al
+# Copy application source code
 COPY . .
 
-# Flask portu
+# Expose Flask port
 EXPOSE 5000
 
-# Sistemi başlat
+# Initialize the SOC Analyzer application
 CMD ["python", "app.py"]

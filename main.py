@@ -106,7 +106,15 @@ def run_full_analysis(stop_flag=None):
             for threat in threat_list:
                 all_threats_text += f"{threat}\n"
         
-        priority_threats = ["Kritik Payload (DPI)", "Hacimsel Anomali", "Veri Sızıntısı / Keylogger", "Şüpheli Port", "Genel Trafik Anomalisi"]
+        # FIXED: Category strings now perfectly match the output of group_threats() in utils.py
+        priority_threats = [
+            "Critical Payload (DPI)", 
+            "Volumetric Anomaly", 
+            "Data Leakage / Keylogger", 
+            "Suspicious Port", 
+            "General Traffic Anomaly"
+        ]
+        
         result_text = ""
         
         for threat_type in priority_threats:

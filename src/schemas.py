@@ -3,18 +3,18 @@ from typing import Literal
 
 class ThreatAnalysisResponse(BaseModel):
     """
-    LLM'den dönen tehdit analizinin kurumsal veri sözleşmesi (Data Contract).
-    LLM bu şema dışına çıkamaz, eksik alan gönderemez veya farklı bir risk seviyesi uyduramaz.
+    Enterprise data contract for the threat analysis returned from the LLM.
+    The LLM cannot deviate from this schema, omit fields, or fabricate risk levels.
     """
     threat_vector: str = Field(
         ..., 
-        description="Saldırının veya anomalinin teknik açıklamasını içeren vektör (örn: SQL Injection, Veri Sızıntısı)."
+        description="Technical vector of the attack or anomaly (e.g., SQL Injection, Data Leakage)."
     )
-    risk_level: Literal["Düşük", "Orta", "Yüksek", "Kritik"] = Field(
+    risk_level: Literal["Low", "Medium", "High", "Critical"] = Field(
         ..., 
-        description="Kesin ve katı bir risk seviyesi. Bu 4 kelime dışında hiçbir şey kabul edilmez."
+        description="Strict risk level. Only these 4 words are accepted."
     )
     action_required: str = Field(
         ..., 
-        description="SOC analistinin sistemi korumak için alması gereken tek cümlelik, doğrudan aksiyon."
+        description="A single-sentence, direct action the SOC analyst must take to secure the system."
     )
